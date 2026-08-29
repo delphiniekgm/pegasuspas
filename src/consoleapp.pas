@@ -47,6 +47,8 @@ begin
   Writeln('  --demo DIR           Scan a folder of .apk files instead of a device');
   Writeln('  --all                Include system packages (default: third-party only)');
   Writeln('  --max N              Maximum APKs to pull/scan');
+  Writeln('  --messages           Also download and scan SMS messages for IoC links/domains');
+  Writeln('  --clear              Clear the working directory (downloaded/extracted files)');
   Writeln('  --report-dir DIR     Output directory for reports');
   Writeln('  --workdir DIR        Working directory for pulled APKs');
 end;
@@ -57,6 +59,7 @@ var
   CfgPath, DeviceSerial, DemoDir, BaseName, LogPath: string;
   i: Integer;
   A: string;
+  ClearMode: Boolean;
   Scn: TScanner;
   Res: TScanResult;
   Devs: TStringList;
@@ -86,6 +89,7 @@ begin
 
     DeviceSerial := '';
     DemoDir := '';
+    ClearMode := False;
     i := 0;
     while i <= High(Args) do begin
       A := Args[i];
@@ -112,7 +116,11 @@ begin
         Cfg.SkipSystemPackages := False
       else if A = '--max' then begin
         Inc(i); if i <= High(Args) then Cfg.MaxApkPull := StrToIntDef(Args[i], Cfg.MaxApkPull);
-      end;
+      end
+      else if A = '--messages' then
+        Cfg.ScanMessages := True
+      else if A = '--clear' then
+        ClearMode := True;
       Inc(i);
     end;
 
@@ -122,6 +130,14 @@ begin
     if Cfg.WorkDir = '' then
       Cfg.WorkDir := AppRoot + 'work';
     Cfg.WorkDir := AbsPath(AppRoot, Cfg.WorkDir);
+
+    if ClearMode then begin
+      if ClearWorkDirectory(Cfg.WorkDir) then
+        Writeln('Cleared working directory: ' + Cfg.WorkDir)
+      else
+        Writeln('Working directory is empty or missing: ' + Cfg.WorkDir);
+      Exit;
+    end;
 
     LogPath := InitLogger(AppRoot, llInfo);
     CLog := TConsoleLogger.Create;

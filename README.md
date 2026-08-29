@@ -24,6 +24,8 @@ You can also add family-based rules as `*.txt` files (see `data/README.md`).
 
 - Package name / SHA-256 / MD5 / signer / permission / string / class IoCs (txt rules).
 - STIX2 indicators: known C2 domains (incl. subdomains), IPs, URLs, emails, hashes and package names.
+- Optional: SMS messages (bodies) can be scanned for the same C2 domains, URLs, IPs
+  and emails (see "Message scanning" below).
 
 ## Building
 
@@ -43,9 +45,36 @@ Requires Lazarus (LCL) and Free Pascal 3.2.2. Adjust `LAZ_ROOT` in the
     pegasus_cli --device SERIAL
     pegasus_cli --demo C:\path\to\apks
     pegasus_cli --all --max 100
+    pegasus_cli --device SERIAL --messages
+    pegasus_cli --clear
+
+## Message scanning (optional)
+
+Pass `--messages` (CLI) or tick "Download and scan SMS messages" (GUI) to also
+pull the device's SMS messages and scan each body for known Pegasus / mercenary
+spyware indicators (C2 domains incl. subdomains, URLs, IPs and email addresses).
+
+Extraction uses two methods with automatic fallback:
+
+1. `adb shell content query --uri content://sms` (dependency-free).
+2. If that returns nothing, `adb pull` of `mmssms.db` is attempted and parsed by
+   a built-in, dependency-free SQLite reader.
+
+All scanned messages (up to `MessagesMaxRows`) are listed in the report, with
+matched messages flagged/highlighted and showing the matched indicator and
+family.
+
+> **Note:** on most modern, non-rooted devices ADB cannot read SMS
+> (`content://sms` is protected and `mmssms.db` lives under `/data/data`, which
+> requires root). The feature therefore works mainly on rooted devices and
+> emulators, and reports "SMS not accessible" otherwise.
 
 ## Notes
 
 - The indicators in `data/` come from the upstream threat-intelligence reports
   referenced above; verify and refresh them before operational use.
 - A device scan requires USB debugging enabled and `bin\adb.exe` present.
+- Pulled APKs and extracted files are cached in the working directory. Re-scanning
+  the same device reuses them (skips re-downloading); scanning a *different* device
+  clears the cache automatically first. Use `--clear` (CLI) or the GUI "Clear..."
+  button to wipe it manually.

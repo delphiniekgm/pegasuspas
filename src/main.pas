@@ -36,6 +36,7 @@ type
     btnRefresh: TButton;
     btnExport: TButton;
     btnSettings: TButton;
+    btnClear: TButton;
     btnCancel: TButton;
     cmbDevices: TComboBox;
     memoLog: TMemo;
@@ -59,6 +60,7 @@ type
     procedure btnDemoClick(Sender: TObject);
     procedure btnExportClick(Sender: TObject);
     procedure btnSettingsClick(Sender: TObject);
+    procedure btnClearClick(Sender: TObject);
     procedure btnCancelClick(Sender: TObject);
     procedure PopulateTree(Res: TScanResult);
     procedure PrepareConfig;
@@ -144,21 +146,27 @@ begin
   btnDemo.Caption := 'Scan APKs...';
   btnDemo.OnClick := @btnDemoClick;
 
+  btnClear := TButton.Create(Self);
+  btnClear.Parent := TopPanel;
+  btnClear.Left := 630; btnClear.Top := 8; btnClear.Width := 90;
+  btnClear.Caption := 'Clear...';
+  btnClear.OnClick := @btnClearClick;
+
   btnExport := TButton.Create(Self);
   btnExport.Parent := TopPanel;
-  btnExport.Left := 630; btnExport.Top := 8; btnExport.Width := 90;
+  btnExport.Left := 728; btnExport.Top := 8; btnExport.Width := 90;
   btnExport.Caption := 'Export...';
   btnExport.OnClick := @btnExportClick;
 
   btnSettings := TButton.Create(Self);
   btnSettings.Parent := TopPanel;
-  btnSettings.Left := 728; btnSettings.Top := 8; btnSettings.Width := 90;
+  btnSettings.Left := 826; btnSettings.Top := 8; btnSettings.Width := 90;
   btnSettings.Caption := 'Settings...';
   btnSettings.OnClick := @btnSettingsClick;
 
   btnCancel := TButton.Create(Self);
   btnCancel.Parent := TopPanel;
-  btnCancel.Left := 826; btnCancel.Top := 8; btnCancel.Width := 90;
+  btnCancel.Left := 924; btnCancel.Top := 8; btnCancel.Width := 90;
   btnCancel.Caption := 'Cancel';
   btnCancel.OnClick := @btnCancelClick;
   btnCancel.Enabled := False;
@@ -381,6 +389,22 @@ begin
     FScanThread.Terminate;
 end;
 
+procedure TMainForm.btnClearClick(Sender: TObject);
+begin
+  if FScanThread <> nil then begin
+    ShowMessage('Please wait for the current scan to finish.');
+    Exit;
+  end;
+  PrepareConfig;
+  if MessageDlg('Clear all downloaded APKs and extracted files in "' + Cfg.WorkDir + '"?',
+       mtConfirmation, mbYesNo, 0) <> mrYes then
+    Exit;
+  if ClearWorkDirectory(Cfg.WorkDir) then
+    memoLog.Lines.Add('Cleared working directory: ' + Cfg.WorkDir)
+  else
+    memoLog.Lines.Add('Working directory is empty or does not exist: ' + Cfg.WorkDir);
+end;
+
 procedure TMainForm.SetBusy(B: Boolean);
 begin
   FBusy := B;
@@ -389,6 +413,7 @@ begin
   btnRefresh.Enabled := not B;
   btnExport.Enabled := not B;
   btnSettings.Enabled := not B;
+  btnClear.Enabled := not B;
   btnCancel.Enabled := B;
   progress.Visible := B;
 end;

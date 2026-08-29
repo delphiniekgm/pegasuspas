@@ -309,6 +309,12 @@ string: pegasus-c2.example.com</code></pre>
     are only available from the actual APK bytes, so the scanner copies each package locally and
     analyses it there. Pulled files go to the configured working directory.
   </div>
+  <div class="note">
+    <strong>Caching.</strong> APKs already present in the working directory are reused instead of
+    being downloaded again. When you scan a <em>different</em> device, the working directory is
+    cleared automatically first. Use the <em>Clear…</em> button (GUI) or <code>--clear</code> (CLI)
+    to wipe it manually.
+  </div>
 </section>
 
 <section class="card" id="apk-flow">
@@ -517,6 +523,8 @@ string: pegasus-c2.example.com</code></pre>
       <tr><td><code>[scan] MaxApkPull</code></td><td><code>200</code></td><td>Maximum APKs to pull/scan (0 = unlimited).</td></tr>
       <tr><td><code>[scan] ExtractStrings</code></td><td><code>1</code></td><td>Extract printable strings from DEX for IoC matching.</td></tr>
       <tr><td><code>[scan] MinStringLen</code></td><td><code>6</code></td><td>Minimum printable string length to keep.</td></tr>
+      <tr><td><code>[scan] ScanMessages</code></td><td><code>0</code></td><td>Download and scan SMS messages for IoC links/domains (needs root/older device).</td></tr>
+      <tr><td><code>[scan] MessagesMaxRows</code></td><td><code>5000</code></td><td>Maximum SMS messages to inspect (0 = unlimited).</td></tr>
       <tr><td><code>[paths] RulesDir</code></td><td><code>data</code></td><td>Directory holding <code>*.stix2</code> and <code>*.txt</code> definition files.</td></tr>
       <tr><td><code>[paths] ReportDir</code></td><td><code>reports</code></td><td>Directory for generated reports.</td></tr>
       <tr><td><code>[paths] WorkDir</code></td><td><em>empty</em></td><td>Working directory for pulled/extracted APKs (empty = <code>&lt;exedir&gt;\work</code>).</td></tr>
@@ -531,7 +539,9 @@ string: pegasus-c2.example.com</code></pre>
 
 pegasus_cli --device SERIAL
 pegasus_cli --demo C:\path\to\apks
-pegasus_cli --all --max 100</code></pre>
+pegasus_cli --all --max 100
+pegasus_cli --device SERIAL --messages
+pegasus_cli --clear</code></pre>
   <table>
     <thead><tr><th>Option</th><th>Meaning</th></tr></thead>
     <tbody>
@@ -541,6 +551,8 @@ pegasus_cli --all --max 100</code></pre>
       <tr><td><code>--demo DIR</code></td><td>Scan a folder of <code>.apk</code> files instead of a device.</td></tr>
       <tr><td><code>--all</code></td><td>Include system packages (default: third-party only).</td></tr>
       <tr><td><code>--max N</code></td><td>Maximum APKs to pull/scan.</td></tr>
+      <tr><td><code>--messages</code></td><td>Also download and scan SMS messages for known C2 links/domains (needs root/older device).</td></tr>
+      <tr><td><code>--clear</code></td><td>Clear the working directory (downloaded APKs / extracted files).</td></tr>
       <tr><td><code>--report-dir DIR</code> / <code>--output DIR</code></td><td>Output directory for reports.</td></tr>
       <tr><td><code>--workdir DIR</code></td><td>Working directory for pulled APKs.</td></tr>
     </tbody>
@@ -601,7 +613,9 @@ pegasus_cli --all --max 100</code></pre>
     </li>
     <li>
       <strong>Privacy.</strong> A device scan copies APK files to the local working directory and
-      generates local reports. It does not upload data anywhere. Review reports before sharing.
+      generates local reports. It does not upload data anywhere. When message scanning is enabled,
+      the scanned messages (bodies) are included in the report and matched ones are highlighted.
+      Review reports before sharing.
     </li>
   </ul>
 </section>
@@ -616,6 +630,7 @@ pegasus_cli --all --max 100</code></pre>
       <tr><td>Scan produces no findings</td><td>Expected for clean apps; verify <code>data\*.stix2</code>/<code>*.txt</code> are present and up to date.</td></tr>
       <tr><td>Pull failed / skip (no apk path)</td><td>The package may be system-only or non-pullable; try <code>--all</code> or rescan a specific package.</td></tr>
       <tr><td>No domain/string matches in demo mode</td><td>Check <code>ExtractStrings</code> is enabled and <code>MinStringLen</code> is reasonable.</td></tr>
+      <tr><td>“SMS not accessible”</td><td>Message scanning needs root or an older/emulator device; on modern non-rooted devices ADB cannot read SMS.</td></tr>
       <tr><td>Reports directory not writable</td><td>Choose a writable <code>ReportDir</code> or run from a user-writable folder.</td></tr>
     </tbody>
   </table>

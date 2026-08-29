@@ -35,6 +35,8 @@ type
     function GetPackagePath(const Serial, Pkg: string; out Path: string): Boolean;
     function Pull(const Serial, Remote, Local: string): Boolean;
     function DumpsysPackage(const Serial, Pkg: string; out Output: string): Boolean;
+    function ReadSms(const Serial: string; out Output: string): Boolean;
+    function PullSmsDb(const Serial, LocalDir: string; out LocalPath: string): Boolean;
     property AdbPath: string read FAdbPath;
     property OnIdle: TIdleProc read FOnIdle write FOnIdle;
   end;
@@ -270,6 +272,32 @@ end;
 function TAdb.DumpsysPackage(const Serial, Pkg: string; out Output: string): Boolean;
 begin
   Result := Shell(Serial, 'dumpsys package ' + Pkg, Output);
+end;
+
+function TAdb.ReadSms(const Serial: string; out Output: string): Boolean;
+begin
+  // Projection keeps 'body' last so the caller can parse each row reliably.
+  Result := Shell(Serial,
+    'content query --uri content://sms --projection address:date:type:body',
+    Output);
+end;
+
+function TAdb.PullSmsDb(const Serial, LocalDir: string; out LocalPath: string): Boolean;
+var
+  OutS: string;
+begin
+  Result := False;
+  LocalPath := '';
+  if LocalDir = '' then
+    Exit;
+  if not DirectoryExists(LocalDir) then
+    ForceDirectories(LocalDir);
+  LocalPath := IncludeTrailingPathDelimiter(LocalDir) + 'mmssms.db';
+  Result := Run(['-s', Serial, 'pull',
+    '/data/data/com.android.providers.telephony/databases/mmssms.db',
+    LocalPath], OutS);
+  if (not Result) or (not FileExists(LocalPath)) then
+    Result := False;
 end;
 
 end.

@@ -10,3 +10,4 @@ lib/
 *.compiled
 *.obj
 *.dbg
+config.ini

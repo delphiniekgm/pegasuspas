@@ -44,6 +44,18 @@ type
     destructor Destroy; override;
   end;
 
+  TMessageResult = class
+  public
+    Address: string;
+    Body: string;
+    DateMs: string;
+    MsgType: string;
+    IndicatorKind: string;
+    IndicatorValue: string;
+    Family: string;
+    constructor Create;
+  end;
+
   TScanResult = class
   public
     DeviceSerial: string;
@@ -53,6 +65,9 @@ type
     Finished: TDateTime;
     Apps: TList;
     Findings: TList;
+    MessagesScanned: Integer;
+    MessagesMatched: Integer;
+    Messages: TList;
     Log: TStringList;
     constructor Create;
     destructor Destroy; override;
@@ -72,6 +87,7 @@ type
     function ScoreApp(Res: TAppResult): Integer;
     procedure MatchStixIndicators(App: TAppResult; Res: TScanResult);
     procedure MatchDeviceIndicators(const Serial: string; Res: TScanResult);
+    procedure MatchMessageIndicators(const Serial: string; Res: TScanResult);
     procedure SetOnIdle(const Value: TIdleProc);
   public
     constructor Create(AConfig: TAppConfig);
@@ -84,9 +100,109 @@ type
 
 function SeverityToString(Sev: TSeverity): string;
 
+// Delete everything inside Dir (files and subdirectories) but keep Dir itself.
+// Returns True if anything was removed.
+function ClearWorkDirectory(const Dir: string): Boolean;
+
 implementation
 
-uses StrUtils;
+uses StrUtils, sms;
+
+const
+  LastDeviceFile = '.last_device';
+
+procedure DeleteTree(const Dir: string);
+var
+  SR: TSearchRec;
+  P: string;
+begin
+  if not DirectoryExists(Dir) then
+    Exit;
+  P := IncludeTrailingPathDelimiter(Dir);
+  if FindFirst(P + '*', faAnyFile, SR) = 0 then begin
+    repeat
+      if (SR.Name = '.') or (SR.Name = '..') then
+        Continue;
+      try
+        if (SR.Attr and faDirectory) <> 0 then
+          DeleteTree(P + SR.Name)
+        else
+          DeleteFile(P + SR.Name);
+      except
+      end;
+    until FindNext(SR) <> 0;
+    FindClose(SR);
+  end;
+  try
+    RemoveDir(Dir);
+  except
+  end;
+end;
+
+function ClearWorkDirectory(const Dir: string): Boolean;
+var
+  SR: TSearchRec;
+  P: string;
+begin
+  Result := False;
+  if not DirectoryExists(Dir) then
+    Exit;
+  P := IncludeTrailingPathDelimiter(Dir);
+  if FindFirst(P + '*', faAnyFile, SR) = 0 then begin
+    repeat
+      if (SR.Name = '.') or (SR.Name = '..') then
+        Continue;
+      Result := True;
+      try
+        if (SR.Attr and faDirectory) <> 0 then
+          DeleteTree(P + SR.Name)
+        else
+          DeleteFile(P + SR.Name);
+      except
+      end;
+    until FindNext(SR) <> 0;
+    FindClose(SR);
+  end;
+end;
+
+function ReadLastDevice(const WorkDir: string): string;
+var
+  P: string;
+  SL: TStringList;
+begin
+  Result := '';
+  P := IncludeTrailingPathDelimiter(WorkDir) + LastDeviceFile;
+  if not FileExists(P) then
+    Exit;
+  SL := TStringList.Create;
+  try
+    try
+      SL.LoadFromFile(P);
+      if SL.Count > 0 then
+        Result := Trim(SL[0]);
+    except
+    end;
+  finally
+    SL.Free;
+  end;
+end;
+
+procedure WriteLastDevice(const WorkDir, Serial: string);
+var
+  SL: TStringList;
+begin
+  if WorkDir = '' then
+    Exit;
+  if not DirectoryExists(WorkDir) then
+    ForceDirectories(WorkDir);
+  SL := TStringList.Create;
+  try
+    SL.Add(Serial);
+    SL.SaveToFile(IncludeTrailingPathDelimiter(WorkDir) + LastDeviceFile);
+  finally
+    SL.Free;
+  end;
+end;
 
 function SeverityToString(Sev: TSeverity): string;
 begin
@@ -141,11 +257,26 @@ begin
   inherited Destroy;
 end;
 
+constructor TMessageResult.Create;
+begin
+  inherited Create;
+  Address := '';
+  Body := '';
+  DateMs := '';
+  MsgType := '';
+  IndicatorKind := '';
+  IndicatorValue := '';
+  Family := '';
+end;
+
 constructor TScanResult.Create;
 begin
   inherited Create;
   Apps := TList.Create;
   Findings := TList.Create;
+  MessagesScanned := 0;
+  MessagesMatched := 0;
+  Messages := TList.Create;
   Log := TStringList.Create;
   Started := Now;
 end;
@@ -160,6 +291,9 @@ begin
   for i := 0 to Findings.Count - 1 do
     TObject(Findings[i]).Free;
   Findings.Free;
+  for i := 0 to Messages.Count - 1 do
+    TObject(Messages[i]).Free;
+  Messages.Free;
   Log.Free;
   inherited Destroy;
 end;
@@ -522,6 +656,77 @@ begin
   end;
 end;
 
+procedure TScanner.MatchMessageIndicators(const Serial: string; Res: TScanResult);
+var
+  Raw: string;
+  Msgs: TList;
+  i, SetIdx: Integer;
+  M: TSmsMessage;
+  MR: TMessageResult;
+  St: TStix2Indicators;
+  Kind, Value, DbPath: string;
+  Matched: Boolean;
+begin
+  DoLog('Checking message-level indicators ...');
+  Msgs := nil;
+  if FAdb.ReadSms(Serial, Raw) then
+    Msgs := ParseContentQuery(Raw);
+  if (Msgs = nil) or (Msgs.Count = 0) then begin
+    FreeSmsList(Msgs);
+    Msgs := nil;
+    DoLog('  content query returned no messages, trying mmssms.db ...');
+    if FAdb.PullSmsDb(Serial, FConfig.WorkDir, DbPath) and FileExists(DbPath) then begin
+      try
+        Msgs := ParseMmssmsDb(DbPath);
+      except
+        on E: Exception do
+          DoError('  failed to parse mmssms.db: ' + E.Message);
+      end;
+    end;
+  end;
+  if Msgs = nil then begin
+    DoLog('  SMS not accessible (root required on this device).');
+    Exit;
+  end;
+  try
+    Res.MessagesScanned := Msgs.Count;
+    if (FConfig.MessagesMaxRows > 0) and (Msgs.Count > FConfig.MessagesMaxRows) then
+      Res.MessagesScanned := FConfig.MessagesMaxRows;
+    DoLog(Format('  Retrieved %d message(s)', [Msgs.Count]));
+    for i := 0 to Msgs.Count - 1 do begin
+      if (FConfig.MessagesMaxRows > 0) and (i >= FConfig.MessagesMaxRows) then
+        Break;
+      M := TSmsMessage(Msgs[i]);
+      MR := TMessageResult.Create;
+      MR.Address := M.Address;
+      MR.Body := M.Body;
+      MR.DateMs := M.DateMs;
+      MR.MsgType := M.MsgType;
+      Matched := False;
+      for SetIdx := 0 to FStixSets.Count - 1 do begin
+        St := TStix2Indicators(FStixSets[SetIdx]);
+        if MatchMessageBody(M.Body, St, Kind, Value) then begin
+          if not Matched then begin
+            MR.IndicatorKind := Kind;
+            MR.IndicatorValue := Value;
+            MR.Family := St.Family;
+            Matched := True;
+          end;
+        end;
+      end;
+      if Matched then begin
+        Inc(Res.MessagesMatched);
+        Res.Findings.Add(TFinding.Create('(sms)', 'sms', sevCritical,
+          Format('Message from %s matched %s indicator "%s" (%s)',
+            [M.Address, MR.IndicatorKind, MR.IndicatorValue, MR.Family])));
+      end;
+      Res.Messages.Add(MR);
+    end;
+  finally
+    FreeSmsList(Msgs);
+  end;
+end;
+
 function MatchFamilies(Db: TSignatureDB; App: TAppResult; Res: TScanResult): Integer;
 var
   i: Integer;
@@ -572,30 +777,47 @@ end;
 procedure TScanner.ScanApp(const Serial, Pkg, WorkDir: string; Res: TScanResult);
 var
   RemotePath, LocalPath, Dump: string;
+  NeedDownload: Boolean;
   Ana: TApkAnalysis;
   App: TAppResult;
 begin
   DoLog('Scanning ' + Pkg + ' ...');
-  if not FAdb.GetPackagePath(Serial, Pkg, RemotePath) then begin
-    DoLog('  skip (no apk path): ' + Pkg);
-    Exit;
-  end;
-  if not DirectoryExists(WorkDir) then
-    ForceDirectories(WorkDir);
   LocalPath := IncludeTrailingPathDelimiter(WorkDir) +
                StringReplace(Pkg, '.', '_', [rfReplaceAll]) + '.apk';
-  if not FAdb.Pull(Serial, RemotePath, LocalPath) then begin
-    DoLog('  skip (pull failed): ' + Pkg);
-    Exit;
-  end;
-  if not FileExists(LocalPath) then begin
-    DoLog('  skip (apk missing locally): ' + Pkg);
-    Exit;
-  end;
-  if not IsValidApk(LocalPath) then begin
-    DoLog('  skip (invalid/corrupt apk): ' + Pkg);
-    DeleteFile(LocalPath);
-    Exit;
+  NeedDownload := True;
+  if FileExists(LocalPath) then begin
+    if IsValidApk(LocalPath) then begin
+      DoLog('  reusing cached apk: ' + LocalPath);
+      NeedDownload := False;
+    end
+    else
+      DoLog('  cached apk invalid, re-downloading: ' + Pkg);
+  end
+  else
+    DoLog('  apk not cached, downloading: ' + Pkg);
+
+  if NeedDownload then begin
+    if not FAdb.GetPackagePath(Serial, Pkg, RemotePath) then begin
+      DoLog('  skip (no apk path): ' + Pkg);
+      Exit;
+    end;
+    if not DirectoryExists(WorkDir) then
+      ForceDirectories(WorkDir);
+    if FileExists(LocalPath) then
+      DeleteFile(LocalPath);
+    if not FAdb.Pull(Serial, RemotePath, LocalPath) then begin
+      DoLog('  skip (pull failed): ' + Pkg);
+      Exit;
+    end;
+    if not FileExists(LocalPath) then begin
+      DoLog('  skip (apk missing locally): ' + Pkg);
+      Exit;
+    end;
+    if not IsValidApk(LocalPath) then begin
+      DoLog('  skip (invalid/corrupt apk): ' + Pkg);
+      DeleteFile(LocalPath);
+      Exit;
+    end;
   end;
   Ana := AnalyzeApk(LocalPath, WorkDir, FConfig.ExtractStrings, FConfig.MinStringLen);
   try
@@ -634,6 +856,7 @@ function TScanner.Scan(const Serial, WorkDir: string): TScanResult;
 var
   Info: TDevice;
   Pkgs: TStringList;
+  LastDev: string;
   i: Integer;
 begin
   Result := TScanResult.Create;
@@ -642,6 +865,13 @@ begin
   Result.DeviceModel := Info.Model;
   Result.AndroidVersion := Info.AndroidVersion;
   DoLog('Device: ' + Serial + ' (' + Info.Model + ', Android ' + Info.AndroidVersion + ')');
+  // Auto-clear cached downloads when scanning a different device.
+  LastDev := ReadLastDevice(WorkDir);
+  if (LastDev <> '') and (LastDev <> Serial) then begin
+    ClearWorkDirectory(WorkDir);
+    DoLog('Cleared cached downloads (device changed to ' + Serial + ').');
+  end;
+  WriteLastDevice(WorkDir, Serial);
   Pkgs := FAdb.ListPackages(Serial, FConfig.SkipSystemPackages);
   try
     DoLog(Format('Found %d packages', [Pkgs.Count]));
@@ -670,6 +900,16 @@ begin
     on E: Exception do
       DoError('device indicator scan failed: ' + E.Message);
   end;
+  if FConfig.ScanMessages then begin
+    try
+      MatchMessageIndicators(Serial, Result);
+    except
+      on E: EAbort do
+        raise;
+      on E: Exception do
+        DoError('message indicator scan failed: ' + E.Message);
+    end;
+  end;
   Result.Finished := Now;
 end;
 
@@ -694,6 +934,14 @@ begin
   except
     on E: EAbort do raise;
     on E: Exception do DoError('device indicator scan failed: ' + E.Message);
+  end;
+  if FConfig.ScanMessages then begin
+    try
+      MatchMessageIndicators(Serial, Result);
+    except
+      on E: EAbort do raise;
+      on E: Exception do DoError('message indicator scan failed: ' + E.Message);
+    end;
   end;
   Result.Finished := Now;
 end;

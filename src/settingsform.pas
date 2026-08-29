@@ -17,6 +17,7 @@ type
     edMaxApkPull: TEdit;
     edTimeoutMs: TEdit;
     chkSkipSystem: TCheckBox;
+    chkMessages: TCheckBox;
     btnOK: TButton;
     btnCancel: TButton;
     dlgDir: TSelectDirectoryDialog;
@@ -95,6 +96,14 @@ begin
   chkSkipSystem.Top := Y;
   chkSkipSystem.Caption := 'Skip system packages';
   chkSkipSystem.Width := 250;
+  Inc(Y, 28);
+
+  chkMessages := TCheckBox.Create(Self);
+  chkMessages.Parent := Self;
+  chkMessages.Left := 150;
+  chkMessages.Top := Y;
+  chkMessages.Caption := 'Download and scan SMS messages (needs root/older device)';
+  chkMessages.Width := 360;
   Inc(Y, 40);
 
   btnOK := TButton.Create(Self);
@@ -151,6 +160,7 @@ begin
   edMaxApkPull.Text := IntToStr(Cfg.MaxApkPull);
   edTimeoutMs.Text := IntToStr(Cfg.TimeoutMs);
   chkSkipSystem.Checked := Cfg.SkipSystemPackages;
+  chkMessages.Checked := Cfg.ScanMessages;
 end;
 
 procedure TSettingsForm.SaveToConfig(Cfg: TAppConfig);
@@ -162,6 +172,7 @@ begin
   Cfg.MaxApkPull := StrToIntDef(Trim(edMaxApkPull.Text), Cfg.MaxApkPull);
   Cfg.TimeoutMs := StrToIntDef(Trim(edTimeoutMs.Text), Cfg.TimeoutMs);
   Cfg.SkipSystemPackages := chkSkipSystem.Checked;
+  Cfg.ScanMessages := chkMessages.Checked;
 end;
 
 end.

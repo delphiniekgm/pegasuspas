@@ -16,6 +16,8 @@ type
     MaxApkPull: Integer;
     ExtractStrings: Boolean;
     MinStringLen: Integer;
+    ScanMessages: Boolean;
+    MessagesMaxRows: Integer;
     RulesDir: string;
     ReportDir: string;
     WorkDir: string;
@@ -88,6 +90,8 @@ begin
   MaxApkPull := 200;
   ExtractStrings := True;
   MinStringLen := 6;
+  ScanMessages := False;
+  MessagesMaxRows := 5000;
   RulesDir := 'data';
   ReportDir := 'reports';
   WorkDir := '';
@@ -101,6 +105,8 @@ begin
   MaxApkPull := Src.MaxApkPull;
   ExtractStrings := Src.ExtractStrings;
   MinStringLen := Src.MinStringLen;
+  ScanMessages := Src.ScanMessages;
+  MessagesMaxRows := Src.MessagesMaxRows;
   RulesDir := Src.RulesDir;
   ReportDir := Src.ReportDir;
   WorkDir := Src.WorkDir;
@@ -121,6 +127,8 @@ begin
     MaxApkPull := Ini.ReadInteger('scan', 'MaxApkPull', MaxApkPull);
     ExtractStrings := Ini.ReadBool('scan', 'ExtractStrings', ExtractStrings);
     MinStringLen := Ini.ReadInteger('scan', 'MinStringLen', MinStringLen);
+    ScanMessages := Ini.ReadBool('scan', 'ScanMessages', ScanMessages);
+    MessagesMaxRows := Ini.ReadInteger('scan', 'MessagesMaxRows', MessagesMaxRows);
     RulesDir := Ini.ReadString('paths', 'RulesDir', RulesDir);
     ReportDir := Ini.ReadString('paths', 'ReportDir', ReportDir);
     WorkDir := Ini.ReadString('paths', 'WorkDir', WorkDir);
@@ -141,6 +149,8 @@ begin
     Ini.WriteInteger('scan', 'MaxApkPull', MaxApkPull);
     Ini.WriteBool('scan', 'ExtractStrings', ExtractStrings);
     Ini.WriteInteger('scan', 'MinStringLen', MinStringLen);
+    Ini.WriteBool('scan', 'ScanMessages', ScanMessages);
+    Ini.WriteInteger('scan', 'MessagesMaxRows', MessagesMaxRows);
     Ini.WriteString('paths', 'RulesDir', RulesDir);
     Ini.WriteString('paths', 'ReportDir', ReportDir);
     Ini.WriteString('paths', 'WorkDir', WorkDir);

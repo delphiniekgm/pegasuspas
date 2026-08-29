@@ -55,12 +55,25 @@ begin
   end;
 end;
 
+function FormatMsgDate(const S: string): string;
+var
+  Ms: Int64;
+  D: TDateTime;
+begin
+  Result := S;
+  if TryStrToInt64(S, Ms) and (Ms > 0) then begin
+    D := Ms / 1000.0 / 86400.0 + 25569.0;
+    Result := FormatDateTime('yyyy-mm-dd hh:nn:ss', D);
+  end;
+end;
+
 function GenerateTextReport(Res: TScanResult): string;
 var
   SL: TStringList;
   i: Integer;
   A: TAppResult;
   F: TFinding;
+  MR: TMessageResult;
 begin
   SL := TStringList.Create;
   try
@@ -78,6 +91,22 @@ begin
       A := TAppResult(Res.Apps[i]);
       SL.Add(Format('%3d  %-45s %-9s sha256=%s sha1=%s', [A.Score, A.PackageName,
         SeverityToString(A.Severity), A.Sha256, A.Sha1]));
+    end;
+    if Res.MessagesScanned > 0 then begin
+      SL.Add('');
+      SL.Add('--- Messages ---');
+      SL.Add(Format('Scanned: %d   Matched: %d', [Res.MessagesScanned, Res.MessagesMatched]));
+      for i := 0 to Res.Messages.Count - 1 do begin
+        MR := TMessageResult(Res.Messages[i]);
+        if MR.IndicatorKind <> '' then
+          SL.Add(Format('  [%s] %s  %s  <- %s "%s" (%s)',
+            [MR.MsgType, MR.Address, FormatMsgDate(MR.DateMs),
+             MR.IndicatorKind, MR.IndicatorValue, MR.Family]))
+        else
+          SL.Add(Format('  [%s] %s  %s', [MR.MsgType, MR.Address, FormatMsgDate(MR.DateMs)]));
+        SL.Add('    ' + StringReplace(StringReplace(MR.Body, #13, ' ', [rfReplaceAll]),
+          #10, ' ', [rfReplaceAll]));
+      end;
     end;
     SL.Add('');
     SL.Add('--- Findings ---');
@@ -97,6 +126,7 @@ var
   i: Integer;
   A: TAppResult;
   F: TFinding;
+  MR: TMessageResult;
 begin
   SL := TStringList.Create;
   try
@@ -121,6 +151,25 @@ begin
          HtmlEscape(A.MatchedFamilies.CommaText)]));
     end;
     SL.Add('</table>');
+    if Res.MessagesScanned > 0 then begin
+      SL.Add('<h2>Messages (' + IntToStr(Res.MessagesMatched) + ' matched of ' +
+        IntToStr(Res.MessagesScanned) + ' scanned)</h2>');
+      SL.Add('<table><tr><th>Type</th><th>Address</th><th>Date</th><th>Matched</th><th>Indicator</th><th>Body</th></tr>');
+      for i := 0 to Res.Messages.Count - 1 do begin
+        MR := TMessageResult(Res.Messages[i]);
+        if MR.IndicatorKind <> '' then begin
+          SL.Add(Format('<tr class="critical"><td>%s</td><td>%s</td><td>%s</td><td>yes</td><td>%s &quot;%s&quot; (%s)</td><td>%s</td></tr>',
+            [HtmlEscape(MR.MsgType), HtmlEscape(MR.Address), HtmlEscape(FormatMsgDate(MR.DateMs)),
+             HtmlEscape(MR.IndicatorKind), HtmlEscape(MR.IndicatorValue), HtmlEscape(MR.Family),
+             HtmlEscape(MR.Body)]));
+        end
+        else
+          SL.Add(Format('<tr><td>%s</td><td>%s</td><td>%s</td><td>no</td><td>-</td><td>%s</td></tr>',
+            [HtmlEscape(MR.MsgType), HtmlEscape(MR.Address), HtmlEscape(FormatMsgDate(MR.DateMs)),
+             HtmlEscape(MR.Body)]));
+      end;
+      SL.Add('</table>');
+    end;
     SL.Add('<h2>Findings (' + IntToStr(Res.Findings.Count) + ')</h2>');
     SL.Add('<table><tr><th>Severity</th><th>App</th><th>Type</th><th>Detail</th></tr>');
     for i := 0 to Res.Findings.Count - 1 do begin
@@ -147,6 +196,7 @@ var
   i: Integer;
   A: TAppResult;
   F: TFinding;
+  MR: TMessageResult;
 begin
   SL := TStringList.Create;
   try
@@ -183,6 +233,22 @@ begin
       SL.Add(Format('      "severity": %s,', [JStr(SeverityToString(F.Severity))]));
       SL.Add(Format('      "detail": %s', [JStr(F.Detail)]));
       if i < Res.Findings.Count - 1 then SL.Add('    },') else SL.Add('    }');
+    end;
+    SL.Add('  ],');
+    SL.Add(Format('  "messages_scanned": %d,', [Res.MessagesScanned]));
+    SL.Add(Format('  "messages_matched": %d,', [Res.MessagesMatched]));
+    SL.Add('  "messages": [');
+    for i := 0 to Res.Messages.Count - 1 do begin
+      MR := TMessageResult(Res.Messages[i]);
+      SL.Add('    {');
+      SL.Add(Format('      "type": %s,', [JStr(MR.MsgType)]));
+      SL.Add(Format('      "address": %s,', [JStr(MR.Address)]));
+      SL.Add(Format('      "date": %s,', [JStr(FormatMsgDate(MR.DateMs))]));
+      SL.Add(Format('      "indicator_kind": %s,', [JStr(MR.IndicatorKind)]));
+      SL.Add(Format('      "indicator": %s,', [JStr(MR.IndicatorValue)]));
+      SL.Add(Format('      "family": %s,', [JStr(MR.Family)]));
+      SL.Add(Format('      "body": %s', [JStr(MR.Body)]));
+      if i < Res.Messages.Count - 1 then SL.Add('    },') else SL.Add('    }');
     end;
     SL.Add('  ]');
     SL.Add('}');
