@@ -1,0 +1,75 @@
+# =============================================================================
+# Pegasus / mercenary-spyware family rules (optional, loaded automatically).
+#
+# The primary detection definitions are the MVT STIX2 files in this directory
+# (pegasus.stix2, android_campaign.stix2). This file is where you add
+# family-based rules such as known Pegasus/NSO Android package names, APK
+# hashes, signer certificates, native libraries, or embedded strings.
+#
+# Format: one "key: value" pair per line; a "family:" line starts a new block.
+# Lines starting with '#' are comments and are ignored.
+#
+# Supported keys:
+#   family:       <name>               starts a block
+#   name:         <display name>       shown in findings
+#   severity:     low|medium|high|critical
+#   package:      <wildcard pattern>   HARD - matches package name (* and ?)
+#   sha256:       <hex>                HARD - APK SHA-256
+#   sha1:         <hex>                HARD - APK SHA-1
+#   md5:          <hex>                HARD - APK MD5
+#   cert:         <substring>          HARD - signer DN substring (device scans)
+#   cert_sha256:  <hex>                HARD - signer certificate SHA-256
+#   lib:          <libname.so>         HARD - native library file inside the APK
+#   asset:        <relative path>      HARD - asset path inside the APK
+#   perm:         <permission>         SOFT - must be present twice per block
+#   string:       <substring>          SOFT - DEX string (twice per block)
+#   class:        <substring>          SOFT - manifest component (twice per block)
+#   domain:       <substring>          searched in DEX strings
+#   ip:           <substring>          searched in DEX strings
+#   url:          <substring>          searched in DEX strings
+#   email:        <substring>          searched in DEX strings
+#
+# Replace the commented examples below with current, verified threat-intelligence
+# data before operational use.
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Example: known implant by package name + certificate fingerprint + native lib.
+# -----------------------------------------------------------------------------
+# family: NSO-Pegasus
+# name: Pegasus Android implant
+# severity: critical
+# package: com.example.pegasus.*
+# cert_sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+# lib: libpegasus_core.so
+
+# -----------------------------------------------------------------------------
+# Example: mercenary-spyware staging component (soft indicators - need 2+).
+# -----------------------------------------------------------------------------
+# family: MVT-Android-Campaign
+# name: Spyware accessibility abuse
+# severity: high
+# perm: android.permission.BIND_ACCESSIBILITY_SERVICE
+# class: com.example.spyware.AccessibilityBridge
+
+# -----------------------------------------------------------------------------
+# Example: C2 network indicators embedded in DEX strings.
+# -----------------------------------------------------------------------------
+# family: NSO-Pegasus
+# name: Pegasus C2 endpoints
+# severity: critical
+# domain: pegasus-c2.example.com
+# ip: 203.0.113.7
+# url: https://pegasus-c2.example.com/up
+# email: drop@pegasus-c2.example.com
+
+# -----------------------------------------------------------------------------
+# Example: known implant by APK hash (most precise, single-indicator match).
+# -----------------------------------------------------------------------------
+# family: NSO-Pegasus
+# name: Pegasus implant (hashes)
+# severity: critical
+# sha256: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+# sha1:   0123456789abcdef0123456789abcdef01234567
+# md5:    0123456789abcdef0123456789abcdef
+

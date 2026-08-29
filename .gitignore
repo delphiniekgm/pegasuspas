@@ -1,0 +1,13 @@
+# Runtime artifacts
+logs/
+reports/
+work/
+
+# Free Pascal / Lazarus build intermediates
+lib/
+*.o
+*.ppu
+*.compiled
+*.obj
+*.dbg
+*.exe

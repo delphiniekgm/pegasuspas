@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pegasus Android Detector — Help &amp; Documentation</title>
+<style>
+  :root {
+    --accent: #1a6fb0; --accent-dark: #0f4d7d; --bg: #f6f8fa;
+    --panel: #ffffff; --border: #d7dde3; --text: #20262e; --muted: #5b6673;
+    --code-bg: #eef1f4; --note-bg: #e8f3fb; --note-border: #9cc6e8;
+    --warn-bg: #fff6e0; --warn-border: #e6c05c;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; color: var(--text); background: var(--bg); line-height: 1.6;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 15.5px;
+  }
+  header.hero { background: linear-gradient(135deg, var(--accent-dark), var(--accent)); color: #fff; padding: 44px 28px 38px; }
+  header.hero .wrap { max-width: 1100px; margin: 0 auto; }
+  header.hero h1 { margin: 0 0 10px; font-size: 30px; }
+  header.hero p { margin: 0; max-width: 820px; opacity: .95; font-size: 16.5px; }
+  .layout { display: flex; max-width: 1100px; margin: 0 auto; gap: 24px; align-items: flex-start; }
+  nav.toc {
+    flex: 0 0 250px; position: sticky; top: 18px; background: var(--panel);
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px 14px;
+    max-height: calc(100vh - 36px); overflow: auto; margin-top: 22px;
+  }
+  nav.toc h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .8px; color: var(--muted); margin: 0 0 10px; }
+  nav.toc a { display: block; color: var(--text); text-decoration: none; padding: 5px 8px; border-radius: 6px; font-size: 14px; border-left: 2px solid transparent; }
+  nav.toc a:hover { background: var(--code-bg); color: var(--accent-dark); }
+  nav.toc a.sub { padding-left: 18px; color: var(--muted); font-size: 13px; }
+  main.content { flex: 1 1 auto; min-width: 0; padding: 22px 0 80px; }
+  section.card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 24px 28px; margin-bottom: 20px; scroll-margin-top: 20px; }
+  h2 { font-size: 22px; margin: 0 0 12px; color: var(--accent-dark); }
+  h3 { font-size: 17px; margin: 22px 0 8px; }
+  h4 { font-size: 15px; margin: 16px 0 6px; }
+  p { margin: 8px 0; }
+  ul, ol { margin: 8px 0 8px 22px; padding: 0; }
+  li { margin: 4px 0; }
+  code { font-family: "SFMono-Regular", Consolas, Menlo, monospace; background: var(--code-bg); border: 1px solid #dde3e8; border-radius: 4px; padding: 1px 5px; font-size: 13.5px; }
+  pre { background: #0f1a24; color: #d8e2ea; padding: 14px 16px; border-radius: 8px; overflow: auto; font-family: "SFMono-Regular", Consolas, Menlo, monospace; font-size: 13px; line-height: 1.5; margin: 12px 0; }
+  pre code { background: none; border: none; color: inherit; padding: 0; font-size: inherit; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; font-size: 14px; }
+  th, td { border: 1px solid var(--border); padding: 8px 10px; text-align: left; vertical-align: top; }
+  th { background: #f0f3f6; font-weight: 600; }
+  .note, .warn { border-radius: 8px; padding: 12px 14px; margin: 14px 0; font-size: 14px; }
+  .note { background: var(--note-bg); border: 1px solid var(--note-border); }
+  .warn { background: var(--warn-bg); border: 1px solid var(--warn-border); }
+  .badge { display: inline-block; border-radius: 999px; padding: 2px 10px; font-size: 12.5px; font-weight: 600; color: #fff; }
+  .b-crit { background: #c00; } .b-high { background: #e80; } .b-med { background: #b8860b; }
+  .b-low { background: #6c757d; } .b-none { background: #9aa4ad; }
+  footer { max-width: 1100px; margin: 0 auto; padding: 0 28px 40px; color: var(--muted); font-size: 13px; }
+  @media (max-width: 860px) { .layout { flex-direction: column; } nav.toc { position: static; flex: none; width: 100%; max-height: none; } }
+</style>
+</head>
+<body>
+
+<header class="hero">
+  <div class="wrap">
+    <h1>Pegasus Android Detector</h1>
+    <p>Help &amp; documentation — how the tool detects Pegasus and other mercenary-spyware
+       indicators on an Android device or in a folder of APK files.</p>
+  </div>
+</header>
+
+<div class="layout">
+<nav class="toc">
+  <h2>Contents</h2>
+  <a href="#intro">1. Introduction</a>
+  <a href="#detects" class="sub">1.1 What it detects</a>
+  <a href="#data">2. Detection data</a>
+  <a href="#txt-rules" class="sub">2.1 Family rule files (.txt)</a>
+  <a href="#stix2" class="sub">2.2 STIX 2.1 indicator files</a>
+  <a href="#refresh" class="sub">2.3 Refreshing definitions</a>
+  <a href="#modes">3. Scan modes</a>
+  <a href="#device-flow">4. How a device scan works</a>
+  <a href="#apk-flow">5. How an APK folder scan works</a>
+  <a href="#matching">6. How matching works</a>
+  <a href="#txt-matching" class="sub">6.1 Family-rule matching</a>
+  <a href="#stix-matching" class="sub">6.2 STIX2 matching</a>
+  <a href="#scoring" class="sub">6.3 Scoring &amp; severity</a>
+  <a href="#analysis">7. How APK files are analysed</a>
+  <a href="#reports">8. Reports</a>
+  <a href="#config">9. Configuration reference</a>
+  <a href="#cli">10. Command-line reference</a>
+  <a href="#build">11. Building from source</a>
+  <a href="#limits">12. Limitations &amp; privacy</a>
+  <a href="#trouble">13. Troubleshooting</a>
+</nav>
+
+<main class="content">
+<section class="card" id="intro">
+  <h2>1. Introduction</h2>
+  <p>
+    <strong>Pegasus Android Detector</strong> is a Lazarus / Free&nbsp;Pascal desktop tool that
+    scans an Android device (through ADB) or a folder of <code>.apk</code> files and flags apps
+    that match known indicators of <strong>NSO&nbsp;Group Pegasus</strong> and other
+    mercenary-spyware families.
+  </p>
+  <p>
+    Detection is <em>indicator-driven</em>: the program does not attempt to "guess" whether an app
+    is malicious from behaviour. Instead it compares each app against two kinds of threat-intel
+    definitions:
+  </p>
+  <ul>
+    <li><strong>Family rule files</strong> (<code>*.txt</code>) — human-editable rules for package
+        names, hashes, signers, permissions, strings, classes and network indicators.</li>
+    <li><strong>STIX&nbsp;2.1 indicator bundles</strong> (<code>*.stix2</code>) — the same IoC files
+        indexed by the <a href="https://github.com/mvt-project/mvt">MVT project</a>.</li>
+  </ul>
+  <p>
+    An app is reported as <em>critical</em> only when it matches one of these definitions. There
+    are no generic permission, heuristic or behavioural checks — the tool is deliberately limited
+    to Pegasus / mercenary-spyware IoC matching to keep false positives low and results
+    interpretable.
+  </p>
+  <div class="note">
+    <strong>Scope note:</strong> this tool matches published indicators. A clean result means
+    <em>no known indicator was found</em>, not a guarantee that a device is free of spyware.
+    Indicator databases are always incomplete for highly targeted threats such as Pegasus.
+  </div>
+</section>
+
+<section class="card" id="detects">
+  <h2>1.1 What it detects</h2>
+  <p>The scanner currently performs exactly two detection passes per application:</p>
+  <ol>
+    <li>
+      <strong>Family-rule matching</strong> (<code>signature</code> findings) — package-name
+      wildcards, SHA-256 / SHA-1 / MD5 hashes, code-signing certificates (DN and SHA-256),
+      native library (<code>.so</code>) names, asset paths, permissions, embedded strings,
+      component (class) names, and domain / IP / URL / email indicators defined in
+      <code>*.txt</code> rule files.
+    </li>
+    <li>
+      <strong>STIX2 indicator matching</strong> (<code>stix</code> findings) — known C2 domains
+      (including sub-domains), IPv4 / IPv6 addresses, URLs, email addresses, file hashes, file
+      paths / names, package names, device properties, process names and signer-certificate
+      hashes loaded from <code>*.stix2</code> files.
+    </li>
+  </ol>
+  <p>
+    Both passes operate on the same per-app material: the app's package name, the SHA-256 and MD5
+    of its APK, its code-signing certificate, the permissions and components declared in its
+    manifest, and printable strings extracted from its DEX bytecode.
+  </p>
+</section>
+
+<section class="card" id="data">
+  <h2>2. Detection data</h2>
+  <p>
+    All definitions live in the <code>data/</code> directory (configurable via
+    <code>RulesDir</code>). On startup the scanner loads every <code>*.txt</code> and
+    <code>*.stix2</code> file found there and logs how many were loaded.
+  </p>
+
+  <h3 id="txt-rules">2.1 Family rule files (<code>*.txt</code>)</h3>
+  <p>
+    These are optional, hand-maintained rules. One <code>key: value</code> pair per line; a
+    <code>family:</code> line starts a new rule block, and every following key belongs to that
+    block until the next <code>family:</code> line. Lines starting with <code>#</code> are
+    comments and blank lines are ignored.
+  </p>
+  <pre><code># family: NSO-Pegasus
+# name: Pegasus Android implant (verified package name)
+# severity: critical
+# package: com.example.pegasus
+
+family: NSO-Pegasus
+name: Pegasus Android implant
+severity: critical
+package: com.skynet.*
+sha256: aabbcc...ff
+string: pegasus-c2.example.com</code></pre>
+  <p>Recognised keys and the IOC kind each maps to:</p>
+  <table>
+    <thead>
+      <tr><th>Key</th><th>Meaning</th><th>Match style</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>family</code></td><td>Family label; starts a new block</td><td>—</td></tr>
+      <tr><td><code>name</code></td><td>Human-readable rule name (shown in findings)</td><td>—</td></tr>
+      <tr><td><code>severity</code></td><td><code>low</code> | <code>medium</code> | <code>high</code> | <code>critical</code></td><td>—</td></tr>
+      <tr><td><code>package</code></td><td>Android package name</td><td>wildcard (<code>*</code>, <code>?</code>)</td></tr>
+      <tr><td><code>sha256</code></td><td>APK SHA-256 hash</td><td>exact, case-insensitive</td></tr>
+      <tr><td><code>sha1</code></td><td>APK SHA-1 hash</td><td>exact, case-insensitive</td></tr>
+      <tr><td><code>md5</code></td><td>APK MD5 hash</td><td>exact, case-insensitive</td></tr>
+      <tr><td><code>cert</code></td><td>Code-signing certificate (DN)</td><td>substring, case-insensitive</td></tr>
+      <tr><td><code>cert_sha256</code></td><td>Signer certificate SHA-256</td><td>exact, case-insensitive</td></tr>
+      <tr><td><code>lib</code></td><td>Native library (<code>.so</code>) name</td><td>exact, case-insensitive</td></tr>
+      <tr><td><code>asset</code></td><td>Asset path inside the APK</td><td>exact</td></tr>
+      <tr><td><code>perm</code></td><td><code>android.permission.XXX</code></td><td>exact (soft indicator)</td></tr>
+      <tr><td><code>string</code></td><td>Text inside the DEX bytecode</td><td>substring, case-insensitive (soft)</td></tr>
+      <tr><td><code>class</code></td><td>Component / class name</td><td>substring, case-insensitive (soft)</td></tr>
+      <tr><td><code>domain</code></td><td>Domain name</td><td>substring in extracted strings</td></tr>
+      <tr><td><code>ip</code></td><td>IP address</td><td>substring in extracted strings</td></tr>
+      <tr><td><code>url</code></td><td>URL</td><td>substring in extracted strings</td></tr>
+      <tr><td><code>email</code></td><td>Email address</td><td>substring in extracted strings</td></tr>
+    </tbody>
+  </table>
+  <div class="note">
+    <strong>Hard vs. soft indicators.</strong> A <em>hard</em> indicator
+    (<code>package</code>, <code>sha256</code>, <code>md5</code>, <code>cert</code>) matches a
+    family on its own. A <em>soft</em> indicator (<code>perm</code>, <code>string</code>,
+    <code>class</code>) must appear at least <strong>twice</strong> in the same rule block before
+    the family is considered matched, to reduce false positives.
+  </div>
+
+
+  <h3 id="stix2">2.2 STIX 2.1 indicator files (<code>*.stix2</code>)</h3>
+  <p>
+    The parser reads the raw JSON bundle text (no external JSON library) and extracts every
+    <code>"pattern"</code> value. The recognised pattern types are:
+  </p>
+  <pre><code>[domain-name:value='example.com']
+[ipv4-addr:value='1.2.3.4']
+[ipv6-addr:value='::1']
+[url:value='http://example.com/a']
+[email-addr:value='x@example.com']
+[file:hashes.'SHA-256' = '...']   (also 'SHA-1' and 'MD5')
+[file:path='/data/local/tmp/dropbox']
+[file:name='roleaccountd.plist']
+[android-package-name:value='com.example.app']
+[android-property:name='sys.brand.note']
+[process:name='fservernetd']
+[x509-certificate:hashes.'SHA-256' = '...']   (also 'SHA-1')</code></pre>
+  <p>The family name is derived from the file name:</p>
+  <ul>
+    <li>file name contains <code>pegasus</code> → <code>NSO-Pegasus</code></li>
+    <li>file name contains <code>android</code> → <code>MVT-Android-Campaign</code></li>
+    <li>otherwise → the lower-cased file name without its extension</li>
+  </ul>
+  <p>Included by default:</p>
+  <table>
+    <thead><tr><th>File</th><th>Family</th><th>Source</th></tr></thead>
+    <tbody>
+      <tr><td><code>data/pegasus.stix2</code></td><td>NSO-Pegasus</td><td>Amnesty International — <code>2021-07-18_nso/pegasus.stix2</code></td></tr>
+      <tr><td><code>data/android_campaign.stix2</code></td><td>MVT-Android-Campaign</td><td>Amnesty International / Google — <code>2023-03-29_android_campaign/malware.stix2</code></td></tr>
+    </tbody>
+  </table>
+
+  <h3 id="refresh">2.3 Refreshing definitions</h3>
+  <p>
+    To update the indicators, replace the <code>*.stix2</code> files in <code>data/</code> with
+    newer ones (keep the <code>.stix2</code> suffix) and/or edit the <code>*.txt</code> rules.
+    No recompilation is needed — files are re-read at the start of every scan.
+  </p>
+</section>
+
+<section class="card" id="modes">
+  <h2>3. Scan modes</h2>
+  <p>The tool offers three scan entry points, all sharing the same detection engine:</p>
+  <table>
+    <thead><tr><th>Mode</th><th>How to start</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><strong>Device scan</strong></td>
+        <td>GUI <em>“Scan Device”</em> button, or <code>pegasus_cli --device SERIAL</code></td>
+        <td>Enumerates installed packages over ADB, pulls each APK and analyses it.</td>
+      </tr>
+      <tr>
+        <td><strong>APK folder scan</strong></td>
+        <td>GUI <em>“Scan APKs…”</em> button, or <code>pegasus_cli --demo DIR</code></td>
+        <td>Scans every <code>.apk</code> in a local folder; no device required.</td>
+      </tr>
+      <tr>
+        <td><strong>Single-package scan</strong></td>
+        <td>Internal API (<code>ScanOne</code>)</td>
+        <td>Scans one named package on a connected device.</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>
+    A device scan needs USB debugging enabled and authorised on the phone, plus an
+    <code>adb</code> executable (bundled as <code>bin\adb.exe</code>). An APK folder scan is
+    fully offline.
+  </p>
+</section>
+
+<section class="card" id="device-flow">
+  <h2>4. How a device scan works</h2>
+  <p>A device scan runs the following pipeline. Each ADB command is listed next to its purpose.</p>
+  <table>
+    <thead><tr><th>Step</th><th>Action</th><th>ADB command</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>List connected devices</td><td><code>adb devices</code></td></tr>
+      <tr><td>2</td><td>Read device model</td><td><code>adb -s SERIAL shell getprop ro.product.model</code></td></tr>
+      <tr><td>3</td><td>Read Android version</td><td><code>adb -s SERIAL shell getprop ro.build.version.release</code></td></tr>
+      <tr><td>4</td><td>List packages (third-party by default)</td><td><code>adb -s SERIAL shell pm list packages -3</code> (or <code>pm list packages</code> with <code>--all</code>)</td></tr>
+      <tr><td>5</td><td>Resolve the APK path for one package</td><td><code>adb -s SERIAL shell pm path PACKAGE</code></td></tr>
+      <tr><td>6</td><td>Pull the APK to the working directory</td><td><code>adb -s SERIAL pull /data/app/.../base.apk local.apk</code></td></tr>
+      <tr><td>7</td><td>Read signer + installer package</td><td><code>adb -s SERIAL shell dumpsys package PACKAGE</code></td></tr>
+    </tbody>
+  </table>
+  <p>Steps 5–7 repeat for every package (bounded by <code>MaxApkPull</code>). For each pulled APK
+     the program then:</p>
+  <ol>
+    <li>Verifies the file is a valid APK (ZIP <code>PK</code> magic bytes).</li>
+    <li>Analyses the APK (hashing, manifest parsing, DEX string extraction) — see
+        <a href="#analysis">section 7</a>.</li>
+    <li>Runs the two IoC matching passes — see <a href="#matching">section 6</a>.</li>
+    <li>Records the app result and any findings.</li>
+  </ol>
+  <div class="note">
+    <strong>Why pull the whole APK?</strong> hashes, the code-signing certificate, and DEX strings
+    are only available from the actual APK bytes, so the scanner copies each package locally and
+    analyses it there. Pulled files go to the configured working directory.
+  </div>
+</section>
+
+<section class="card" id="apk-flow">
+  <h2>5. How an APK folder scan works</h2>
+  <p>
+    The “Scan APKs…” button / <code>--demo DIR</code> path skips all ADB steps and operates
+    directly on local files:
+  </p>
+  <ol>
+    <li>Enumerate <code>*.apk</code> files in the selected folder.</li>
+    <li>For each file, run the same analysis pipeline: hash, parse the manifest, extract DEX strings.</li>
+    <li>Run the same two IoC matching passes and record findings.</li>
+  </ol>
+  <p>
+    Because no device is involved, fields such as device model and Android version are left empty
+    and the report is labelled <code>(demo)</code>. The signer and installer-package fields are
+    also unavailable (they come from <code>dumpsys package</code>), so <code>cert</code>-based
+    rules cannot match in this mode.
+  </p>
+</section>
+
+<section class="card" id="matching">
+  <h2>6. How matching works</h2>
+  <p>
+    Every app is scored against the loaded definitions. A match produces a <em>finding</em> (an
+    individual observation) and adds the matched family to the app's family list.
+  </p>
+
+  <h3 id="txt-matching">6.1 Family-rule matching</h3>
+  <p>
+    Each <code>*.txt</code> rule block is evaluated against the app with the
+    <code>BlockMatches</code> logic:
+  </p>
+  <ul>
+    <li><code>package</code> — wildcard match against the app's package name (supports <code>*</code> and <code>?</code>).</li>
+    <li><code>sha256</code> / <code>md5</code> — case-insensitive exact match against the APK hashes.</li>
+    <li><code>cert</code> — case-insensitive substring match against the code-signing certificate.</li>
+    <li><code>domain</code> / <code>ip</code> / <code>url</code> / <code>email</code> — case-insensitive substring search across all extracted DEX strings.</li>
+    <li><code>perm</code> — exact match against a declared manifest permission.</li>
+    <li><code>string</code> — substring search across extracted DEX strings.</li>
+    <li><code>class</code> — substring search across declared manifest components.</li>
+  </ul>
+  <p>
+    A block is considered a match if <strong>any hard indicator matches</strong>, or if
+    <strong>two or more soft indicators</strong> (<code>perm</code>, <code>string</code>,
+    <code>class</code>) match.
+  </p>
+  <p>
+    On a match, the block's <code>severity</code> and <code>name</code> are used to create a
+    finding of kind <code>signature</code>, and the block's <code>family</code> is added to the
+    app's matched-family list.
+  </p>
+
+
+  <h3 id="stix-matching">6.2 STIX2 matching</h3>
+  <p>The STIX2 pass checks each app against every loaded <code>*.stix2</code> bundle:</p>
+  <table>
+    <thead><tr><th>Indicator</th><th>How it is matched</th><th>Finding severity</th></tr></thead>
+    <tbody>
+      <tr><td>Package name</td><td>exact, case-insensitive</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>SHA-256</td><td>exact</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>MD5</td><td>exact</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>SHA-1</td><td>exact</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>Signer cert SHA-256 / SHA-1</td><td>exact against the extracted signing certificate</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>File name</td><td>matches file / asset / native-library names inside the APK</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>Domain (C2)</td><td>host candidate matched, then walked up to parent domains for sub-domain coverage</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>IP address</td><td>substring across extracted strings</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>URL</td><td>substring across extracted strings</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>Email address</td><td>substring across extracted strings</td><td><span class="badge b-high">high</span></td></tr>
+      <tr><td>Device property</td><td>reads <code>getprop</code>; matches if set (device scans)</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>File path</td><td>checks existence on the device (device scans)</td><td><span class="badge b-crit">critical</span></td></tr>
+      <tr><td>Process name</td><td>matches running processes (device scans)</td><td><span class="badge b-crit">critical</span></td></tr>
+    </tbody>
+  </table>
+  <p>
+    Domain matching is sub-domain aware: a string such as <code>mail.pegasus.example.com</code>
+    will also match an indicator for <code>pegasus.example.com</code> and
+    <code>example.com</code> by progressively stripping leading labels.
+  </p>
+  <div class="note">
+    <strong>Device-level indicators.</strong> The <code>device property</code>,
+    <code>file path</code> and <code>process name</code> indicators are checked against the live
+    device via ADB, so they only apply to <em>device scans</em> — not offline APK-folder scans.
+  </div>
+
+  <h3 id="scoring">6.3 Scoring &amp; severity</h3>
+  <p>
+    The app-level <em>score</em> is a coarse summary: an app is scored
+    <strong>100 / critical</strong> if it matched at least one family or STIX2 indicator, and
+    <strong>0 / none</strong> otherwise.
+  </p>
+  <p>Severity values used throughout the tool:</p>
+  <table>
+    <thead><tr><th>Value</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge b-none">none</span></td><td>no indicator matched</td></tr>
+      <tr><td><span class="badge b-low">low</span></td><td>low-confidence / low-impact indicator</td></tr>
+      <tr><td><span class="badge b-med">medium</span></td><td>notable indicator</td></tr>
+      <tr><td><span class="badge b-high">high</span></td><td>strong indicator</td></tr>
+      <tr><td><span class="badge b-crit">critical</span></td><td>known spyware package / hash / C2</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Individual findings keep their own severity (for example, an email IOC finding is
+    <em>high</em>, while a package or C2-domain finding is <em>critical</em>), which is what
+    appears in the report's findings table.
+  </p>
+</section>
+
+<section class="card" id="analysis">
+  <h2>7. How APK files are analysed</h2>
+  <p>For each APK the scanner extracts the material the IoC rules need:</p>
+  <ol>
+    <li>
+      <strong>Hashing</strong> — the whole APK file is hashed with SHA-256, SHA-1 and MD5.
+      These are compared against <code>sha256:</code>/<code>sha1:</code>/<code>md5:</code> rules
+      and STIX2 file-hash indicators.
+    </li>
+    <li>
+      <strong>Manifest parsing</strong> — the APK is a ZIP archive; the binary
+      <code>AndroidManifest.xml</code> (AXML) is unpacked and parsed to recover the package name,
+      declared permissions, and components (activities, services, receivers, providers), plus
+      whether the app declares a launcher activity.
+    </li>
+    <li>
+      <strong>String extraction</strong> — if enabled, top-level <code>classes*.dex</code> files
+      are scanned for printable ASCII strings of at least <code>MinStringLen</code> characters
+      (default 6). The result is sorted and de-duplicated. This is the corpus searched for
+      C2 domains, IPs, URLs, emails and <code>string:</code> rules.
+    </li>
+    <li>
+      <strong>Archive enumeration</strong> — native library names (<code>lib/**/*.so</code>),
+      asset paths and every file name are collected to enable <code>lib:</code>/<code>asset:</code>
+      rules and STIX2 <code>file:name</code> matching.
+    </li>
+    <li>
+      <strong>Certificate fingerprint</strong> — the signer certificate is extracted from the v1
+      signature block (<code>META-INF/*.RSA|.DSA|.EC</code>) and hashed with SHA-256/SHA-1 to
+      match <code>cert_sha256:</code> rules and STIX2 <code>x509-certificate</code> indicators.
+    </li>
+  </ol>
+  <p>
+    String extraction is controlled by <code>ExtractStrings</code> and <code>MinStringLen</code>
+    in the configuration. Disabling it skips all string/domain/IP/URL/email matching (only
+    package, hash, permission and class indicators remain effective).
+  </p>
+</section>
+
+<section class="card" id="reports">
+  <h2>8. Reports</h2>
+  <p>After a scan the program writes three files into the report directory and (in the GUI) opens
+     the HTML version in the browser:</p>
+  <table>
+    <thead><tr><th>Format</th><th>Contents</th></tr></thead>
+    <tbody>
+      <tr><td><code>.txt</code></td><td>Plain-text summary: device info, per-app score/severity/hash, then a findings list.</td></tr>
+      <tr><td><code>.html</code></td><td>Styled tables for applications and findings.</td></tr>
+      <tr><td><code>.json</code></td><td>Machine-readable structure (see below).</td></tr>
+    </tbody>
+  </table>
+
+  <h3>8.1 JSON structure</h3>
+  <pre><code>{
+  "device": "...",
+  "model": "...",
+  "android": "...",
+  "started": "...", "finished": "...",
+  "apps": [
+    {
+      "package": "com.example.app",
+      "score": 100,
+      "severity": "critical",
+      "sha256": "...",
+      "sha1": "...",
+      "md5": "...",
+      "cert_sha256": "...",
+      "signer": "...",
+      "installer": "...",
+      "has_launcher": true,
+      "families": ["NSO-Pegasus"]
+    }
+  ],
+  "findings": [
+    { "app": "com.example.app", "kind": "stix", "severity": "critical", "detail": "..." }
+  ]
+}</code></pre>
+  <p>
+    <code>families</code> is the list of threat families the app matched; it is empty for clean
+    apps. Each finding has a <code>kind</code> of <code>signature</code> (txt rule) or
+    <code>stix</code> (STIX2 indicator), a severity, and a human-readable <code>detail</code>.
+  </p>
+</section>
+
+<section class="card" id="config">
+  <h2>9. Configuration reference</h2>
+  <p>
+    Settings are stored in <code>config.ini</code> next to the executable. In the GUI they can be
+    edited from <em>Settings…</em>. Relative paths are resolved against the executable directory.
+  </p>
+  <table>
+    <thead><tr><th>Section / key</th><th>Default</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>[adb] AdbPath</code></td><td><em>empty</em></td><td>Full path to <code>adb.exe</code>; empty auto-detects <code>bin\adb.exe</code> or PATH.</td></tr>
+      <tr><td><code>[adb] TimeoutMs</code></td><td><code>30000</code></td><td>Command timeout in milliseconds.</td></tr>
+      <tr><td><code>[scan] SkipSystemPackages</code></td><td><code>1</code></td><td>Only scan third-party/user packages (use <code>--all</code> to override).</td></tr>
+      <tr><td><code>[scan] MaxApkPull</code></td><td><code>200</code></td><td>Maximum APKs to pull/scan (0 = unlimited).</td></tr>
+      <tr><td><code>[scan] ExtractStrings</code></td><td><code>1</code></td><td>Extract printable strings from DEX for IoC matching.</td></tr>
+      <tr><td><code>[scan] MinStringLen</code></td><td><code>6</code></td><td>Minimum printable string length to keep.</td></tr>
+      <tr><td><code>[paths] RulesDir</code></td><td><code>data</code></td><td>Directory holding <code>*.stix2</code> and <code>*.txt</code> definition files.</td></tr>
+      <tr><td><code>[paths] ReportDir</code></td><td><code>reports</code></td><td>Directory for generated reports.</td></tr>
+      <tr><td><code>[paths] WorkDir</code></td><td><em>empty</em></td><td>Working directory for pulled/extracted APKs (empty = <code>&lt;exedir&gt;\work</code>).</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="card" id="cli">
+  <h2>10. Command-line reference</h2>
+  <p>The console binary is <code>pegasus_cli</code> (or <code>pegasus_scanner --console</code>):</p>
+  <pre><code>pegasus_cli --help
+
+pegasus_cli --device SERIAL
+pegasus_cli --demo C:\path\to\apks
+pegasus_cli --all --max 100</code></pre>
+  <table>
+    <thead><tr><th>Option</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>-h, --help</code></td><td>Show help.</td></tr>
+      <tr><td><code>--config FILE</code></td><td>Path to <code>config.ini</code> (default <code>&lt;exedir&gt;\config.ini</code>).</td></tr>
+      <tr><td><code>--device SERIAL</code></td><td>ADB device serial (default: first device).</td></tr>
+      <tr><td><code>--demo DIR</code></td><td>Scan a folder of <code>.apk</code> files instead of a device.</td></tr>
+      <tr><td><code>--all</code></td><td>Include system packages (default: third-party only).</td></tr>
+      <tr><td><code>--max N</code></td><td>Maximum APKs to pull/scan.</td></tr>
+      <tr><td><code>--report-dir DIR</code> / <code>--output DIR</code></td><td>Output directory for reports.</td></tr>
+      <tr><td><code>--workdir DIR</code></td><td>Working directory for pulled APKs.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+<section class="card" id="build">
+  <h2>11. Building from source</h2>
+  <p>The project requires <a href="https://www.lazarus-ide.org/">Lazarus</a> (LCL) and
+     Free&nbsp;Pascal 3.2.2. Three batch files drive the build (adjust <code>LAZ_ROOT</code> if
+     your install path differs):</p>
+  <table>
+    <thead><tr><th>Script</th><th>Output</th></tr></thead>
+    <tbody>
+      <tr><td><code>build_gui.bat</code></td><td><code>bin\pegasus_scanner.exe</code> (GUI)</td></tr>
+      <tr><td><code>build_cli.bat</code></td><td><code>bin\pegasus_cli.exe</code> (console)</td></tr>
+      <tr><td><code>build_test.bat</code></td><td>builds and runs <code>tests\selftest.lpr</code></td></tr>
+    </tbody>
+  </table>
+  <p>Source layout:</p>
+  <ul>
+    <li><code>src/scanner.pas</code> — scan orchestration and IoC matching.</li>
+    <li><code>src/signatures.pas</code> — <code>*.txt</code> rule loader and wildcard matching.</li>
+    <li><code>src/stix2.pas</code> — dependency-free STIX&nbsp;2.1 indicator parser.</li>
+    <li><code>src/apk.pas</code> — APK hashing, unpacking and DEX string extraction.</li>
+    <li><code>src/manifest.pas</code> — binary AXML manifest parser.</li>
+    <li><code>src/adb.pas</code> — ADB process wrapper.</li>
+    <li><code>src/report.pas</code> — HTML / JSON / text report generators.</li>
+    <li><code>src/config.pas</code> — <code>config.ini</code> handling.</li>
+    <li><code>src/main.pas</code>, <code>src/consoleapp.pas</code> — GUI and console front ends.</li>
+  </ul>
+</section>
+
+<section class="card" id="limits">
+  <h2>12. Limitations &amp; privacy</h2>
+  <ul>
+    <li>
+      <strong>Known-indicator matching only.</strong> The tool detects only what its definitions
+      describe. It cannot identify unknown or zero-day spyware, and a clean report is not a
+      security guarantee.
+    </li>
+    <li>
+      <strong>Indicator freshness.</strong> The bundled <code>pegasus.stix2</code> and
+      <code>android_campaign.stix2</code> come from specific Amnesty International / Google
+      investigations. Refresh them before operational use.
+    </li>
+    <li>
+      <strong>Device scan needs USB debugging.</strong> Enable Developer Options → USB debugging
+      and authorise the computer on the device.
+    </li>
+    <li>
+      <strong>APK folder scan has no signer data.</strong> Because <code>dumpsys package</code> is
+      a device command, <code>cert:</code> rules cannot match in offline/demo mode.
+    </li>
+    <li>
+      <strong>Split APKs.</strong> Only the primary <code>base.apk</code> path returned by
+      <code>pm path</code> is pulled; additional split APKs are not fetched.
+    </li>
+    <li>
+      <strong>Privacy.</strong> A device scan copies APK files to the local working directory and
+      generates local reports. It does not upload data anywhere. Review reports before sharing.
+    </li>
+  </ul>
+</section>
+
+<section class="card" id="trouble">
+  <h2>13. Troubleshooting</h2>
+  <table>
+    <thead><tr><th>Problem</th><th>Likely cause / fix</th></tr></thead>
+    <tbody>
+      <tr><td>“No ADB devices found”</td><td>Enable USB debugging, accept the RSA prompt on the phone, and check the cable/driver.</td></tr>
+      <tr><td>adb path is empty</td><td>Set <code>AdbPath</code> in <code>config.ini</code> or ensure <code>bin\adb.exe</code> exists.</td></tr>
+      <tr><td>Scan produces no findings</td><td>Expected for clean apps; verify <code>data\*.stix2</code>/<code>*.txt</code> are present and up to date.</td></tr>
+      <tr><td>Pull failed / skip (no apk path)</td><td>The package may be system-only or non-pullable; try <code>--all</code> or rescan a specific package.</td></tr>
+      <tr><td>No domain/string matches in demo mode</td><td>Check <code>ExtractStrings</code> is enabled and <code>MinStringLen</code> is reasonable.</td></tr>
+      <tr><td>Reports directory not writable</td><td>Choose a writable <code>ReportDir</code> or run from a user-writable folder.</td></tr>
+    </tbody>
+  </table>
+</section>
+
+
+
+
+
+
+
+
+
+
+
+</main>
+
+</div>
+
+<footer>
+  Pegasus Android Detector — help &amp; documentation. Detection definitions are sourced from
+  Amnesty International / Google via the MVT indicator ecosystem and should be refreshed before
+  operational use.
+</footer>
+</body>
+</html>
