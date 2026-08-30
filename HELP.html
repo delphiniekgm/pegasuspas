@@ -77,6 +77,8 @@
   <a href="#refresh" class="sub">2.3 Refreshing definitions</a>
   <a href="#modes">3. Scan modes</a>
   <a href="#device-flow">4. How a device scan works</a>
+  <a href="#prepare-usb" class="sub">4.1 Enabling USB debugging</a>
+  <a href="#prepare-root" class="sub">4.2 Getting root access</a>
   <a href="#apk-flow">5. How an APK folder scan works</a>
   <a href="#matching">6. How matching works</a>
   <a href="#txt-matching" class="sub">6.1 Family-rule matching</a>
@@ -315,6 +317,47 @@ string: pegasus-c2.example.com</code></pre>
     cleared automatically first. Use the <em>Clear…</em> button (GUI) or <code>--clear</code> (CLI)
     to wipe it manually.
   </div>
+
+  <h3 id="prepare-usb">4.1 Enabling USB debugging</h3>
+  <ol>
+    <li>Open <strong>Settings &rarr; About phone</strong> and tap <strong>Build number</strong>
+        seven times until &ldquo;You are now a developer&rdquo; appears (the exact location varies
+        by vendor).</li>
+    <li>Open <strong>Settings &rarr; System &rarr; Developer options</strong> (on some devices this
+        is under <strong>Additional settings</strong>).</li>
+    <li>Turn on <strong>USB debugging</strong>.</li>
+    <li>Connect the phone to the computer with a USB cable and choose <strong>File transfer</strong>
+        / <strong>MTP</strong> if prompted.</li>
+    <li>On the phone, tap <strong>Allow</strong> on the &ldquo;Allow USB debugging?&rdquo; prompt
+        (optionally tick &ldquo;Always allow from this computer&rdquo;).</li>
+    <li>Run <code>adb devices</code> &mdash; the phone should be listed as <code>device</code>. If it
+        shows <code>unauthorized</code>, re-check the prompt on the phone.</li>
+  </ol>
+  <div class="note">
+    Some vendors hide the Developer options menu until <strong>OEM unlocking</strong> is enabled or
+    until you sign in to the vendor account.
+  </div>
+
+  <h3 id="prepare-root">4.2 Getting root access</h3>
+  <p>Root is only needed for the optional <strong>message scan</strong>: reading SMS requires
+     <code>mmssms.db</code> under <code>/data/data</code>, which ADB cannot access on a normal
+     device. The APK scan works without root.</p>
+  <div class="warn">
+    <strong>Warning.</strong> Rooting can void your warranty, block OTA updates and reduce device
+    security. Only root a device you own, and back it up first.
+  </div>
+  <ul>
+    <li><strong>Pixel / Nexus:</strong> unlock the bootloader with
+        <code>fastboot flashing unlock</code> and boot a
+        <a href="https://github.com/topjohnwu/Magisk">Magisk</a>-patched image.</li>
+    <li><strong>Other brands:</strong> follow a device-specific guide (typically a patched boot
+        image or a <code>TWRP</code> recovery); the steps differ per model.</li>
+    <li><strong>Emulator alternative:</strong> an Android emulator or a dedicated test phone can
+        provide <code>adb root</code> and full <code>/data/data</code> access without modifying a
+        personal device.</li>
+  </ul>
+  <p>After rooting, verify access with <code>adb root</code> or <code>adb shell su -c id</code>
+     before enabling <code>--messages</code>.</p>
 </section>
 
 <section class="card" id="apk-flow">
